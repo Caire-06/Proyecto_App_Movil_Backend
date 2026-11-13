@@ -1,0 +1,9 @@
+target/
+basedatos/*.db
+basedatos/*.db-journal
+basedatos/*.db-wal
+basedatos/*.db-shm
+.idea/
+*.iml
+.vscode/
+.DS_Store
