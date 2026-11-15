@@ -14,6 +14,8 @@ import com.utp.sautex.vistas.dto.UsuarioDTO;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.utp.sautex.vistas.dto.RolDTO;
+
 import java.util.List;
 
 @Service
@@ -88,20 +90,34 @@ public class UsuarioService {
     @Transactional
     public void eliminar(Integer id, Integer idSolicitante) {
         Usuario usuario = buscarEntidad(id);
+
         if (usuario.getIdUsuario().equals(idSolicitante)) {
-            throw new IllegalArgumentException("No puede eliminar su propia cuenta");
+            throw new IllegalArgumentException("No puede desactivar su propia cuenta");
         }
+
         if ("admin@sautex.com".equalsIgnoreCase(usuario.getCorreo())) {
-            throw new IllegalArgumentException("La cuenta principal del administrador no se puede eliminar");
+            throw new IllegalArgumentException("La cuenta principal del administrador no se puede desactivar");
         }
-        if (usuario.getRol() != null && "admin".equalsIgnoreCase(usuario.getRol().getNombre())
+
+        if ("admin".equalsIgnoreCase(usuario.getRol().getNombre())
                 && usuarios.countByRolNombre("admin") <= 1) {
             throw new IllegalArgumentException("Debe existir al menos un administrador");
         }
-        if (pedidos.existsByUsuarioIdUsuario(id)) {
-            throw new IllegalArgumentException("El usuario tiene pedidos registrados y no se puede eliminar");
+
+        usuario.setEstado("Inactivo");
+        usuarios.save(usuario);
+    }
+    @Transactional
+    public UsuarioDTO restaurar(Integer id) {
+        Usuario usuario = buscarEntidad(id);
+
+        if ("Activo".equalsIgnoreCase(usuario.getEstado())) {
+            throw new IllegalArgumentException("El usuario ya está activo");
         }
-        usuarios.delete(usuario);
+
+        usuario.setEstado("Activo");
+
+        return UsuarioDTO.desde(usuarios.save(usuario));
     }
 
     @Transactional
@@ -148,5 +164,11 @@ public class UsuarioService {
         String valor = nombre == null ? "cliente" : nombre.trim().toLowerCase();
         return roles.findByNombre(valor)
                 .orElseThrow(() -> new IllegalArgumentException("El rol indicado no existe"));
+    }
+    @Transactional(readOnly = true)
+    public List<RolDTO> listarRoles() {
+        return roles.findAll().stream()
+                .map(RolDTO::desde)
+                .toList();
     }
 }

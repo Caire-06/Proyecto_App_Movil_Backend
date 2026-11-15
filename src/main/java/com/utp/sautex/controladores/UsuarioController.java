@@ -19,6 +19,9 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.springframework.web.bind.annotation.PatchMapping;
+import com.utp.sautex.vistas.dto.RolDTO;
+
 import java.util.List;
 
 @RestController
@@ -37,6 +40,15 @@ public class UsuarioController {
     public List<UsuarioDTO> listar(@RequestHeader(value = "Authorization", required = false) String autorizacion) {
         seguridad.conRol(autorizacion, "admin");
         return usuarios.listar();
+    }
+    
+    @GetMapping("/roles")
+    public List<RolDTO> listarRoles(
+            @RequestHeader(value = "Authorization", required = false) String autorizacion) {
+
+        seguridad.conRol(autorizacion, "admin");
+
+        return usuarios.listarRoles();
     }
 
     @PostMapping
@@ -61,4 +73,17 @@ public class UsuarioController {
         usuarios.eliminar(id, admin.getIdUsuario());
         return ResponseEntity.noContent().build();
     }
+    @PatchMapping("/{id}/restaurar")
+    public UsuarioDTO restaurar(
+            @RequestHeader(value = "Authorization", required = false) String autorizacion,
+            @PathVariable Integer id) {
+
+        seguridad.conRol(autorizacion, "admin");
+
+        return usuarios.restaurar(id);
+    }
+
+    
 }
+
+

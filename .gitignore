@@ -7,3 +7,4 @@ basedatos/*.db-shm
 *.iml
 .vscode/
 .DS_Store
+.metals/
