@@ -44,6 +44,12 @@ public class ProductoController {
         return productos.categorias();
     }
 
+    @GetMapping("/todos")
+    public List<ProductoDTO> listarTodos(@RequestHeader(value = "Authorization", required = false) String autorizacion) {
+        seguridad.conRol(autorizacion, "admin");
+        return productos.listarTodos();
+    }
+
     @PostMapping
     public ResponseEntity<ProductoDTO> crear(@RequestHeader(value = "Authorization", required = false) String autorizacion,
                                              @Valid @RequestBody CrearProductoDTO dto) {

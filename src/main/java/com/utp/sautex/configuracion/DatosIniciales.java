@@ -1,8 +1,10 @@
 package com.utp.sautex.configuracion;
 
+import com.utp.sautex.modelos.entidades.Categoria;
 import com.utp.sautex.modelos.entidades.Producto;
 import com.utp.sautex.modelos.entidades.Rol;
 import com.utp.sautex.modelos.entidades.Usuario;
+import com.utp.sautex.modelos.repositorios.CategoriaRepository;
 import com.utp.sautex.modelos.repositorios.MovimientoInventarioRepository;
 import com.utp.sautex.modelos.repositorios.ProductoRepository;
 import com.utp.sautex.modelos.repositorios.RolRepository;
@@ -24,16 +26,18 @@ public class DatosIniciales implements CommandLineRunner {
     private final MovimientoInventarioRepository movimientos;
     private final AlmacenService almacen;
     private final ClaveService claves;
+    private final CategoriaRepository categorias;
 
     public DatosIniciales(RolRepository roles, UsuarioRepository usuarios, ProductoRepository productos,
                           MovimientoInventarioRepository movimientos, AlmacenService almacen,
-                          ClaveService claves) {
+                          ClaveService claves, CategoriaRepository categorias) {
         this.roles = roles;
         this.usuarios = usuarios;
         this.productos = productos;
         this.movimientos = movimientos;
         this.almacen = almacen;
         this.claves = claves;
+        this.categorias = categorias;
     }
 
     @Override
@@ -50,6 +54,11 @@ public class DatosIniciales implements CommandLineRunner {
         buscarUsuario("Carmen", "Ríos", "cliente@sautex.com", "987654321",
                 "Av. Los Hilos 245, Lima", "cliente123", rolCliente);
 
+        buscarCategoria("Poliéster", "Hilos de poliéster");
+        buscarCategoria("Nylon", "Hilos de nylon");
+        buscarCategoria("Texturizados", "Hilos texturizados");
+        buscarCategoria("Algodón", "Hilos de algodón");
+
         if (productos.count() == 0) {
             crearProductos();
         }
@@ -64,6 +73,16 @@ public class DatosIniciales implements CommandLineRunner {
     private Rol buscarRol(String nombre, String descripcion) {
         return roles.findByNombre(nombre)
                 .orElseGet(() -> roles.save(new Rol(nombre, descripcion)));
+    }
+
+    private void buscarCategoria(String nombre, String descripcion) {
+        if (!categorias.existsByNombreIgnoreCase(nombre)) {
+            Categoria categoria = new Categoria();
+            categoria.setNombre(nombre);
+            categoria.setDescripcion(descripcion);
+            categoria.setActivo(true);
+            categorias.save(categoria);
+        }
     }
 
     private Usuario buscarUsuario(String nombre, String apellido, String correo, String telefono,
@@ -83,13 +102,13 @@ public class DatosIniciales implements CommandLineRunner {
     }
 
     private void crearProductos() {
-        producto("Hilo Poliéster 150D", "Cono x 5 kg", "12.50", 120, 6, "Poliéster",
+        producto("Hilo Poliéster 150D", "Cono x 5 kg", "12.50", 120, 0, "Poliéster",
                 "hilo-polieter150.jpg", "Hilo de poliéster de alta resistencia para costura industrial.");
-        producto("Hilo Nylon Industrial", "Cono x 5 kg", "15.00", 80, 2, "Nylon",
+        producto("Hilo Nylon Industrial", "Cono x 5 kg", "15.00", 80, 0, "Nylon",
                 "hilo-nylon.jpg", "Hilo de nylon resistente para tejidos técnicos y acabados.");
-        producto("Hilo Poliéster 300D", "Cono x 8 kg", "18.50", 45, 3, "Poliéster",
+        producto("Hilo Poliéster 300D", "Cono x 8 kg", "18.50", 45, 0, "Poliéster",
                 "hilo-poliester300.jpg", "Hilo de mayor grosor para costuras reforzadas.");
-        producto("Hilo Texturizado 75D", "Bobina x 3 kg", "9.80", 100, 5, "Texturizados",
+        producto("Hilo Texturizado 75D", "Bobina x 3 kg", "9.80", 100, 0, "Texturizados",
                 "hilo-texturizado75.jpg", "Hilo texturizado de textura suave para prendas ligeras.");
         producto("Hilo Algodón 20/2", "Cono x 1 kg", "14.00", 60, 0, "Algodón",
                 "hilo-algodon.jpg", "Hilo de algodón peinado para confección de prendas.");

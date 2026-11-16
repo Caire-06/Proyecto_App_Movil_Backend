@@ -1,6 +1,8 @@
 package com.utp.sautex.modelos.servicios;
 
+import com.utp.sautex.modelos.entidades.Categoria;
 import com.utp.sautex.modelos.entidades.Producto;
+import com.utp.sautex.modelos.repositorios.CategoriaRepository;
 import com.utp.sautex.modelos.repositorios.ProductoRepository;
 import com.utp.sautex.vistas.dto.ActualizarProductoDTO;
 import com.utp.sautex.vistas.dto.CrearProductoDTO;
@@ -8,17 +10,22 @@ import com.utp.sautex.vistas.dto.ProductoDTO;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.TreeSet;
 
 @Service
 public class ProductoService {
 
     private final ProductoRepository productos;
     private final AlmacenService almacen;
+    private final CategoriaRepository categorias;
 
-    public ProductoService(ProductoRepository productos, AlmacenService almacen) {
+    public ProductoService(ProductoRepository productos, AlmacenService almacen, CategoriaRepository categorias) {
         this.productos = productos;
         this.almacen = almacen;
+        this.categorias = categorias;
     }
 
     @Transactional(readOnly = true)
@@ -40,13 +47,28 @@ public class ProductoService {
     }
 
     @Transactional(readOnly = true)
-    public List<String> categorias() {
+    public List<ProductoDTO> listarTodos() {
         return productos.findAll().stream()
+                .sorted(Comparator.comparing(Producto::getNombre, String.CASE_INSENSITIVE_ORDER))
+                .map(ProductoDTO::desde)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> categorias() {
+        TreeSet<String> nombres = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+
+        categorias.findByActivoTrueOrderByNombreAsc().stream()
+                .map(Categoria::getNombre)
+                .filter(nombre -> nombre != null && !nombre.isBlank())
+                .forEach(nombres::add);
+
+        productos.findAll().stream()
                 .map(Producto::getCategoria)
                 .filter(categoria -> categoria != null && !categoria.isBlank())
-                .distinct()
-                .sorted()
-                .toList();
+                .forEach(nombres::add);
+
+        return new ArrayList<>(nombres);
     }
 
     @Transactional
