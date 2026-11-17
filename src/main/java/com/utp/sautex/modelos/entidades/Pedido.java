@@ -23,9 +23,10 @@ import java.util.stream.Collectors;
 @Table(name = "pedidos")
 public class Pedido {
 
+    public static final String ESTADO_EN_PREPARACION = "en preparación";
     public static final String ESTADO_EN_CAMINO = "en camino";
     public static final String ESTADO_ENTREGADO = "entregado";
-    public static final List<String> ESTADOS_VALIDOS = List.of(ESTADO_EN_CAMINO, ESTADO_ENTREGADO);
+    public static final List<String> ESTADOS_VALIDOS = List.of(ESTADO_EN_PREPARACION, ESTADO_EN_CAMINO, ESTADO_ENTREGADO);
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -69,11 +70,11 @@ public class Pedido {
             fechaGeneracion = LocalDateTime.now();
         }
         if (estado == null) {
-            estado = ESTADO_EN_CAMINO;
+            estado = ESTADO_EN_PREPARACION;
         }
         if (!ESTADOS_VALIDOS.contains(estado)) {
             throw new IllegalArgumentException("Estado de pedido no válido: " + estado
-                    + ". Valores permitidos: 'en camino' o 'entregado'");
+                    + ". Valores permitidos: 'en preparación', 'en camino' o 'entregado'");
         }
     }
 
@@ -108,7 +109,7 @@ public class Pedido {
     public void setEstado(String estado) {
         String normalizado = estado == null ? null : estado.trim().toLowerCase();
         if (normalizado == null || !ESTADOS_VALIDOS.contains(normalizado)) {
-            throw new IllegalArgumentException("El estado solo puede ser 'en camino' o 'entregado'");
+            throw new IllegalArgumentException("El estado solo puede ser 'en preparación', 'en camino' o 'entregado'");
         }
         this.estado = normalizado;
     }

@@ -50,7 +50,7 @@ public class PedidoController {
         return pedidos.listarDeUsuario(usuario.getIdUsuario());
     }
 
-    /** Todos los pedidos (admin / almacen). Filtro opcional: ?estado=en camino | entregado */
+    /** Todos los pedidos (admin / almacen). Filtro opcional: ?estado=en preparación | en camino | entregado */
     @GetMapping
     public List<PedidoResponse> listar(
             @RequestHeader(value = "Authorization", required = false) String autorizacion,
@@ -68,14 +68,17 @@ public class PedidoController {
         return pedidos.obtener(id, usuario, !esPersonal(usuario));
     }
 
-    /** Cambia el estado del pedido (admin / almacen). Body: {"estado": "entregado"} */
+    /**
+     * Cambia el estado del pedido. El almacén marca 'en preparación' / 'en camino'
+     * y el cliente confirma la recepción ('entregado'). Body: {"estado": "en camino"}
+     */
     @PatchMapping("/{id}/estado")
     public PedidoResponse cambiarEstado(
             @RequestHeader(value = "Authorization", required = false) String autorizacion,
             @PathVariable Integer id,
             @Valid @RequestBody CambiarEstadoRequest request) {
-        seguridad.conRol(autorizacion, "admin", "almacen");
-        return pedidos.cambiarEstado(id, request.estado());
+        Usuario usuario = seguridad.actual(autorizacion);
+        return pedidos.cambiarEstado(id, request.estado(), usuario);
     }
 
     private boolean esPersonal(Usuario usuario) {

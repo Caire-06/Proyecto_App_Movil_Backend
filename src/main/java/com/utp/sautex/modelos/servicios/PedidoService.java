@@ -149,7 +149,7 @@ public class PedidoService {
         Pedido pedido = new Pedido();
         pedido.setUsuario(usuario);
         pedido.setFechaGeneracion(LocalDateTime.now());
-        pedido.setEstado(Pedido.ESTADO_EN_CAMINO);
+        pedido.setEstado(Pedido.ESTADO_EN_PREPARACION);
         pedido.setListaIdProductos(ids);
         pedido.setListaCantidades(cantidades);
         pedido.setSubtotal(subtotal);
@@ -204,10 +204,41 @@ public class PedidoService {
         return aRespuesta(pedido);
     }
 
+    /**
+     * Cambia el estado del pedido según el rol:
+     * el almacén prepara o despacha y el cliente confirma la recepción.
+     */
     @Transactional
-    public PedidoResponse cambiarEstado(Integer idPedido, String estado) {
+    public PedidoResponse cambiarEstado(Integer idPedido, String estado, Usuario usuario) {
         Pedido pedido = buscarEntidad(idPedido);
-        pedido.setEstado(normalizarEstado(estado));
+        String nuevo = normalizarEstado(estado);
+        String rol = rolDe(usuario);
+
+        if ("almacen".equals(rol)) {
+            if (!Pedido.ESTADO_EN_PREPARACION.equals(nuevo) && !Pedido.ESTADO_EN_CAMINO.equals(nuevo)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                        "El almacén solo puede marcar el pedido como 'en preparación' o 'en camino'");
+            }
+        } else if ("cliente".equals(rol)) {
+            if (!Pedido.ESTADO_ENTREGADO.equals(nuevo)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                        "Solo puedes confirmar la recepción del pedido");
+            }
+            if (pedido.getUsuario() == null
+                    || !pedido.getUsuario().getIdUsuario().equals(usuario.getIdUsuario())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                        "No tiene permisos para actualizar este pedido");
+            }
+            if (!Pedido.ESTADO_EN_CAMINO.equals(pedido.getEstado())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Solo puedes confirmar un pedido que está en camino");
+            }
+        } else {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "No tiene permisos para cambiar el estado del pedido");
+        }
+
+        pedido.setEstado(nuevo);
         return aRespuesta(pedidos.save(pedido));
     }
 
@@ -223,9 +254,16 @@ public class PedidoService {
     private String normalizarEstado(String estado) {
         String normalizado = estado == null ? "" : estado.trim().toLowerCase();
         if (!Pedido.ESTADOS_VALIDOS.contains(normalizado)) {
-            throw new IllegalArgumentException("El estado solo puede ser 'en camino' o 'entregado'");
+            throw new IllegalArgumentException("El estado solo puede ser 'en preparación', 'en camino' o 'entregado'");
         }
         return normalizado;
+    }
+
+    private String rolDe(Usuario usuario) {
+        if (usuario == null || usuario.getRol() == null || usuario.getRol().getNombre() == null) {
+            return "";
+        }
+        return usuario.getRol().getNombre().trim().toLowerCase();
     }
 
     private void registrarSalida(Producto producto, int cantidad, int stockAnterior,
